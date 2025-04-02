@@ -3,11 +3,11 @@
     Disables weak TLS cipher suites.
 
 .DESCRIPTION
-    This remediation script searches for and disables known weak TLS cipher suites
-    such as 3DES, RC4, IDEA, and DES using Disable-TlsCipherSuite.
+    This remediation script disables known weak cipher suites such as 3DES, RC4, IDEA, and DES.
+    It dynamically checks for installed cipher suites that match those patterns and disables them
+    using the Disable-TlsCipherSuite cmdlet.
 
-    It dynamically queries installed cipher suites to avoid hardcoding exact names,
-    which may differ across OS versions. Only detected weak ciphers are targeted.
+    This avoids hardcoding cipher names and ensures compatibility across OS versions.
 
     Reference: https://nvd.nist.gov/vuln/detail/CVE-2016-2183
 
@@ -16,24 +16,22 @@
 
 .REQUIREMENTS
     PowerShell 5.1+
-    Windows 10 20H1+ or Windows Server 2022+
-    Script must run as Administrator (System context in Intune is sufficient)
+    Windows 10 20H1 or later / Windows Server 2022+
+    Must run as Administrator (System context in Intune is sufficient)
 #>
 
-# List of known weak cipher patterns (partial name matches)
 $weakPatterns = @("3DES", "IDEA", "RC", "DES")
-$disabledList = @()
+$disabledCiphers = @()
 
 try {
     foreach ($pattern in $weakPatterns) {
-        # We check against the currently installed cipher suites using a pattern match.
-        # This avoids hardcoding and prevents errors when trying to disable non-existent ciphers.
-        $matches = Get-TlsCipherSuite | Where-Object { $_.Name -match $pattern }
+        # Get all installed cipher suites matching this weak pattern
+        $ciphersToDisable = Get-TlsCipherSuite | Where-Object { $_.Name -match $pattern }
 
-        foreach ($cipher in $matches) {
+        foreach ($cipher in $ciphersToDisable) {
             try {
                 Disable-TlsCipherSuite -Name $cipher.Name -ErrorAction Stop
-                $disabledList += $cipher.Name
+                $disabledCiphers += $cipher.Name
             }
             catch {
                 Write-Output "Failed to disable cipher: $($cipher.Name). Error: $_"
@@ -41,9 +39,9 @@ try {
         }
     }
 
-    if ($disabledList.Count -gt 0) {
+    if ($disabledCiphers.Count -gt 0) {
         Write-Output "Disabled the following weak cipher suites:"
-        $disabledList | ForEach-Object { Write-Output "- $_" }
+        $disabledCiphers | ForEach-Object { Write-Output "- $_" }
     } else {
         Write-Output "No weak cipher suites found to disable."
     }

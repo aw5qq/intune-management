@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Detects the presence of known weak TLS cipher suites.
+    Detects the presence of weak TLS cipher suites.
 
 .DESCRIPTION
-    This script checks for the presence of insecure or deprecated cipher suites 
-    such as 3DES, RC4, and others. If any are found, the script exits with code 1 (non-compliant).
-    If none are found, it exits with code 0 (compliant).
+    This detection script searches for known weak TLS cipher suites (e.g., 3DES, RC, IDEA, DES).
+    If any weak ciphers are found, the script exits with code 1 (non-compliant).
+    Otherwise, it exits with code 0 (compliant).
 
     Reference: https://nvd.nist.gov/vuln/detail/CVE-2016-2183
 
@@ -13,22 +13,23 @@
     Author: Andrew Welch (aw5qq@virginia.edu)
 #>
 
-# List of weak ciphers to check for (partial names)
-$weakCiphers = @("3DES", "IDEA", "RC", "DES")
-
+$weakPatterns = @("3DES", "IDEA", "RC", "DES")
 $detected = $false
 
-foreach ($name in $weakCiphers) {
+foreach ($pattern in $weakPatterns) {
     try {
-        $matches = Get-TlsCipherSuite | Where-Object { $_.Name -match $name }
-        if ($matches) {
-            Write-Output "Detected weak cipher(s) containing: $name"
+        $weakCiphersFound = Get-TlsCipherSuite | Where-Object { $_.Name -match $pattern }
+
+        if ($weakCiphersFound) {
+            foreach ($cipher in $weakCiphersFound) {
+                Write-Output "Detected weak cipher: $($cipher.Name)"
+            }
             $detected = $true
             break
         }
     }
     catch {
-        Write-Output "Failed to query TLS cipher suites. Ensure PowerShell 5.1 or later is installed. Error: $_"
+        Write-Output "Error checking cipher suites: $_"
         Exit 1
     }
 }
