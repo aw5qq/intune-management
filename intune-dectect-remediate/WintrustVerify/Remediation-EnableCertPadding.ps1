@@ -13,12 +13,19 @@
     The script is idempotent — running it multiple times will not cause issues and will
     ensure the correct setting is always applied.
 
+    If $triggerReboot is set to $true and the remediation is successful, the script will
+    initiate a reboot with a 60-second delay to allow logging and cleanup.
+
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
 
 .REQUIREMENTS
     Must be run with administrative privileges or in SYSTEM context (e.g., Intune).
 #>
+
+# ===== CONFIGURATION =====
+$triggerReboot = $true
+# =========================
 
 $registryEntries = @(
     @{
@@ -60,6 +67,12 @@ foreach ($entry in $registryEntries) {
 
 if ($success) {
     Write-Output "Remediation completed successfully."
+
+    if ($triggerReboot) {
+        Write-Output "triggerReboot is enabled. Initiating system reboot in 60 seconds..."
+        shutdown.exe /r /t 60 /c "Reboot triggered by remediation script"
+    }
+
     Exit 0
 } else {
     Write-Output "Remediation encountered errors."
