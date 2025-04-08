@@ -13,7 +13,7 @@
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
 
-    Run Context : SYSTEM (default)
+    Run Context : Logged-in user
     Architecture: 64-bit PowerShell
 #>
 
