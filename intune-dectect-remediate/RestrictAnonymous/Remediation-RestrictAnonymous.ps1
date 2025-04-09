@@ -10,9 +10,10 @@
     It assumes detection has already confirmed non-compliance.
 
 .NOTES
-    QID: 90044
     Author: Andrew Welch (aw5qq@virginia.edu)
-    Must run in SYSTEM context (Intune default)
+
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
 #>
 
 $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\LSA"

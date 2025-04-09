@@ -14,10 +14,8 @@
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
 
-.REQUIREMENTS
-    PowerShell 5.1+
-    Windows 10 20H1 or later / Windows Server 2022+
-    Must run as Administrator (System context in Intune is sufficient)
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
 #>
 
 $weakPatterns = @("3DES", "IDEA", "RC", "DES")

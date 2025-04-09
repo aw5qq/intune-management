@@ -12,7 +12,9 @@
 
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
-    Must run as SYSTEM or with admin privileges.
+
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
 #>
 
 $searchPatterns = @(

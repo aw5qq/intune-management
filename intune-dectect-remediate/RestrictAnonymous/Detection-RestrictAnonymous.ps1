@@ -8,8 +8,10 @@
     If the value is set to 1 (restrict anonymous access), it is marked compliant.
 
 .NOTES
-    QID: 90044
     Author: Andrew Welch (aw5qq@virginia.edu)
+    
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
 #>
 
 $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\LSA"

@@ -9,8 +9,9 @@
 
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
-    Intended for use with Intune Proactive Remediations.
-    Must run in **user context** to display toast notification.
+
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
 #>
 
 # Get uptime (used only to personalize the toast message)

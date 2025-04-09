@@ -9,7 +9,9 @@
 
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
-    Intended for use with Intune Proactive Remediations
+
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
 #>
 
 # Define uptime threshold in days
