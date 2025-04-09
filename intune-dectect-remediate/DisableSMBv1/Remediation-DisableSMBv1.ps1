@@ -8,6 +8,11 @@
 
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
+    
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
+
+    This script is intended for Windows 10 version 1709 (build 16299) and newer.
 #>
 
 try {
