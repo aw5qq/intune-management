@@ -18,6 +18,9 @@
 
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
+    
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
 
 .REQUIREMENTS
     Must be run with administrative privileges or in SYSTEM context (e.g., Intune).

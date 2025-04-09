@@ -9,6 +9,9 @@
 
 .NOTES
     Author: Andrew Welch (aw5qq@virginia.edu)
+    
+    Run Context : SYSTEM (default)
+    Architecture: 64-bit PowerShell
 #>
 
 $expectedValue = 1
