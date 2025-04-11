@@ -29,12 +29,16 @@ $forceUpdate = $false
 # ===================================
 
 # Validate winget is installed
-if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-    Write-Warning "winget not found. Cannot remediate ${packageId}."
-    exit 1
+$wingetPath = (Get-Command "winget.exe" -ErrorAction SilentlyContinue)?.Source
+if (-not $wingetPath) {
+    $wingetPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"
+    if (-not (Test-Path $wingetPath)) {
+        Write-Warning "winget not found. Cannot remediate ${packageId}."
+        exit 1
+    }
 }
 
-Write-Output "winget is available. Target package: $packageId"
+Write-Output "winget found at: $wingetPath. Target package: $packageId"
 
 # Detect if app is running
 $isAppRunning = $false
@@ -61,17 +65,19 @@ try {
         "--accept-source-agreements"
     )
 
-    $process = Start-Process -FilePath "winget.exe" -ArgumentList $params -Wait -NoNewWindow -PassThru
-    $exitCode = $process.ExitCode
+    # Run winget and capture all output
+    $wingetOutput = & $wingetPath @params 2>&1
+    $exitCode = $LASTEXITCODE
 
     Write-Output "winget exited with code: $exitCode"
+    Write-Output "winget output:`n$wingetOutput"
 
     switch ($exitCode) {
         0 {
             Write-Output "$packageId upgraded successfully."
             exit 0
         }
-        -1978335189 {  # WINGET_ERROR_NO_APPLICABLE_UPDATE_FOUND
+        -1978335189 {
             Write-Output "No update available for ${packageId}. Already up to date."
             exit 0
         }
@@ -81,6 +87,6 @@ try {
         }
     }
 } catch {
-    Write-Error "An error occurred while upgrading ${packageId}: ${_}"
+    Write-Error "An error occurred while upgrading ${packageId}: $_"
     exit 1
 }
