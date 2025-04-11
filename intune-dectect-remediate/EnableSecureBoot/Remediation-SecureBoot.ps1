@@ -16,5 +16,5 @@
     This script flags non-compliant systems for review or manual remediation.
 #>
 
-Write-Warning "Secure Boot is not enabled. This must be enabled manually in UEFI firmware."
+Write-Output "Secure Boot is not enabled. This must be enabled manually in UEFI firmware."
 exit 1
