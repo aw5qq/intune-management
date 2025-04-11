@@ -24,31 +24,45 @@ $packageId = "Google.Chrome"  # Example: "Google.Chrome"
 # ===================================
 
 # Check if winget is installed
-if (-not (Get-Command winget.exe -ErrorAction SilentlyContinue)) {
-    Write-Warning "winget not found. Skipping detection for $packageId."
-    exit 0
+$wingetPath = (Get-Command "winget.exe" -ErrorAction SilentlyContinue)?.Source
+if (-not $wingetPath) {
+    $wingetPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"
+    if (-not (Test-Path $wingetPath)) {
+        Write-Warning "winget not found. Skipping detection for $packageId."
+        exit 0
+    }
 }
 
-Write-Output "winget found. Checking for updates to $packageId..."
+Write-Output "winget found at: $wingetPath. Checking for updates to $packageId..."
 
 try {
-    $result = winget upgrade --id $packageId --source winget 2>&1
-    #Write-Output "winget output:`n$result"
+    $params = @(
+        "upgrade",
+        "--id", $packageId,
+        "--source", "winget"
+    )
 
-    if ($result -match "No available upgrade found") {
-        Write-Output "$packageId is up to date."
-        exit 0
-    }
+    $result = & $wingetPath @params 2>&1
+    $exitCode = $LASTEXITCODE
 
-    $escapedId = [regex]::Escape($packageId)
-    if ($result -match $escapedId) {
-        Write-Output "Update available for $packageId."
-        exit 1
-    } else {
-        Write-Output "$packageId not found in winget output. Assuming it is up to date or not installed."
-        exit 0
+    Write-Output "winget exit code: $exitCode"
+    Write-Output "winget output:`n$result"
+
+    switch ($exitCode) {
+        0 {
+            Write-Output "Update available for $packageId."
+            exit 1
+        }
+        -1978335189 {
+            Write-Output "$packageId is up to date."
+            exit 0
+        }
+        default {
+            Write-Output "$packageId not found or no update info available. Assuming compliant."
+            exit 0
+        }
     }
 } catch {
-    Write-Error "An error occurred while checking for updates to ${packageId}: ${_}"
+    Write-Error "An error occurred while checking for updates to ${packageId}: $_"
     exit 0
 }
