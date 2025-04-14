@@ -29,7 +29,9 @@ $forceUpdate = $false
 # ===================================
 
 # Validate winget is installed
-$wingetPath = (Get-Command "winget.exe" -ErrorAction SilentlyContinue)?.Source
+$wingetCommand = Get-Command "winget.exe" -ErrorAction SilentlyContinue
+$wingetPath = if ($wingetCommand) { $wingetCommand.Source } else { $null }
+
 if (-not $wingetPath) {
     $wingetPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"
     if (-not (Test-Path $wingetPath)) {
