@@ -35,7 +35,7 @@ $wingetPath = if ($wingetCommand) { $wingetCommand.Source } else { $null }
 if (-not $wingetPath) {
     $wingetPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"
     if (-not (Test-Path $wingetPath)) {
-        Write-Warning "winget not found. Cannot remediate ${packageId}."
+        Write-Output "winget not found. Cannot remediate ${packageId}."
         exit 1
     }
 }
@@ -84,7 +84,7 @@ try {
             exit 0
         }
         default {
-            Write-Warning "Upgrade for ${packageId} failed. winget exit code: $exitCode"
+            Write-Output "Upgrade for ${packageId} failed. winget exit code: $exitCode"
             exit 1
         }
     }
