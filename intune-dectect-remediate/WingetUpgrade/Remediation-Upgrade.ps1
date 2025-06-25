@@ -3,59 +3,48 @@
     Updates a specified application using winget.
 
 .DESCRIPTION
-    This script checks if winget is installed, detects whether the target application is running,
-    and uses the $forceUpdate flag to determine whether to proceed with the upgrade.
-    It supports any winget-compatible package and can be reused across applications.
-    Uses '2>&1' when capturing winget output to ensure both stdout and stderr are captured.
-    This is necessary because winget sometimes writes status messages like
-    "No available upgrade found" to stderr rather than stdout.
-
-.NOTES
-    Author: Andrew Welch (aw5qq@virginia.edu)
-
-    Run Context : Logged-in user
-    Architecture: 64-bit PowerShell
+    Detects if the app is running, and upgrades it using winget under SYSTEM context.
+    Skips update if running unless $forceUpdate is set to $true.
 #>
 
 # ========== CONFIGURATION ==========
-# Winget package ID as recognized by `winget upgrade`
 $packageId = "Google.Chrome"
-
-# Name of the process to check if app is running (no .exe)
 $appProcessName = "chrome"
-
-# Set to $true to allow upgrade even if app is running
 $forceUpdate = $false
+$logDir = "C:\ProgramData\WingetRemediation"
+$logFile = "$logDir\Remediate_$packageId.log"
 # ===================================
 
-# Validate winget is installed
-$wingetCommand = Get-Command "winget.exe" -ErrorAction SilentlyContinue
-$wingetPath = if ($wingetCommand) { $wingetCommand.Source } else { $null }
+# Ensure logging directory exists
+if (-not (Test-Path $logDir)) {
+    New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+}
+Start-Transcript -Path $logFile -Append
 
+# Discover winget
+$wingetPath = Get-Command "winget.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue
 if (-not $wingetPath) {
-    $wingetPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"
-    if (-not (Test-Path $wingetPath)) {
-        Write-Output "winget not found. Cannot remediate ${packageId}."
-        exit 1
-    }
+    $wingetPath = "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*\winget.exe"
+    $wingetPath = Get-ChildItem -Path $wingetPath -ErrorAction SilentlyContinue | Select-Object -First 1 | Select-Object -ExpandProperty FullName
 }
 
-Write-Output "winget found at: $wingetPath. Target package: $packageId"
-
-# Detect if app is running
-$isAppRunning = $false
-if (Get-Process $appProcessName -ErrorAction SilentlyContinue) {
-    $isAppRunning = $true
-    Write-Warning "$appProcessName is currently running."
+if (-not (Test-Path $wingetPath)) {
+    Write-Warning "winget.exe not found. Remediation aborted for $packageId."
+    Stop-Transcript
+    exit 1
 }
 
-# Decision logic
+Write-Output "winget located at: $wingetPath"
+
+# Check if app is running
+$isAppRunning = Get-Process -Name $appProcessName -ErrorAction SilentlyContinue
 if ($isAppRunning -and -not $forceUpdate) {
-    Write-Output "Remediation skipped: ${appProcessName} is running and forceUpdate is disabled."
+    Write-Warning "$appProcessName is running. Skipping update (forceUpdate = $forceUpdate)."
+    Stop-Transcript
     exit 0
 }
 
-Write-Output "Proceeding with winget upgrade (forceUpdate = $forceUpdate)..."
+Write-Output "Proceeding with winget upgrade..."
 
 try {
     $params = @(
@@ -67,7 +56,6 @@ try {
         "--accept-source-agreements"
     )
 
-    # Run winget and capture all output
     $wingetOutput = & $wingetPath @params 2>&1
     $exitCode = $LASTEXITCODE
 
@@ -77,18 +65,22 @@ try {
     switch ($exitCode) {
         0 {
             Write-Output "$packageId upgraded successfully."
+            Stop-Transcript
             exit 0
         }
         -1978335189 {
-            Write-Output "No update available for ${packageId}. Already up to date."
+            Write-Output "$packageId is already up to date."
+            Stop-Transcript
             exit 0
         }
         default {
-            Write-Output "Upgrade for ${packageId} failed. winget exit code: $exitCode"
+            Write-Error "Upgrade failed for $packageId. Exit code: $exitCode"
+            Stop-Transcript
             exit 1
         }
     }
 } catch {
-    Write-Error "An error occurred while upgrading ${packageId}: $_"
+    Write-Error "Unhandled error during upgrade: $_"
+    Stop-Transcript
     exit 1
 }

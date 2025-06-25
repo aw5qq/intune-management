@@ -3,46 +3,35 @@
     Detects whether a specified application is outdated using winget.
 
 .DESCRIPTION
-    This script checks if winget is installed and determines if an update is available
-    for the specified package ID. If an update is available, it exits with code 1 (non-compliant).
-    If no update is available, it exits with code 0 (compliant).
-    Uses '2>&1' when capturing winget output to ensure both stdout and stderr are captured.
-    This is necessary because winget sometimes writes status messages like
-    "No available upgrade found" to stderr rather than stdout.
-
-.NOTES
-    Author: Andrew Welch (aw5qq@virginia.edu)
-    
-    Run Context : Logged-in user
-    Architecture: 64-bit PowerShell
+    Checks if an update is available for a specific winget package ID.
+    Exits 1 if an update is available (non-compliant), 0 if up to date.
+    Designed for use under SYSTEM context (e.g., Intune).
 #>
 
 # ========== CONFIGURATION ==========
-# Winget package ID as recognized by `winget upgrade`
-$packageId = "Google.Chrome"  # Example: "Google.Chrome"
-# You can change this to any other package ID you want to check.
+$packageId = "Google.Chrome"
+$logPath = "C:\ProgramData\WingetDetect_$packageId.log"
+Start-Transcript -Path $logPath -Append
 # ===================================
 
-# Check if winget is installed
-$wingetCommand = Get-Command "winget.exe" -ErrorAction SilentlyContinue
-$wingetPath = if ($wingetCommand) { $wingetCommand.Source } else { $null }
+# Check for winget in system path
+$wingetPath = Get-Command "winget.exe" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue
+
 if (-not $wingetPath) {
-    $wingetPath = "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"
-    if (-not (Test-Path $wingetPath)) {
-        Write-Warning "winget not found. Skipping detection for $packageId."
-        exit 0
-    }
+    $wingetPath = "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*\winget.exe"
+    $wingetPath = Get-ChildItem -Path $wingetPath -ErrorAction SilentlyContinue | Select-Object -First 1 | Select-Object -ExpandProperty FullName
 }
 
-Write-Output "winget found at: $wingetPath. Checking for updates to $packageId..."
+if (-not (Test-Path $wingetPath)) {
+    Write-Warning "winget.exe not found. Assuming compliant."
+    Stop-Transcript
+    exit 0
+}
+
+Write-Output "winget located at $wingetPath. Checking for updates to $packageId..."
 
 try {
-    $params = @(
-        "upgrade",
-        "--id", $packageId,
-        "--source", "winget"
-    )
-
+    $params = @("upgrade", "--id", $packageId, "--source", "winget")
     $result = & $wingetPath @params 2>&1
     $exitCode = $LASTEXITCODE
 
@@ -52,18 +41,22 @@ try {
     switch ($exitCode) {
         0 {
             Write-Output "Update available for $packageId."
+            Stop-Transcript
             exit 1
         }
         -1978335189 {
             Write-Output "$packageId is up to date."
+            Stop-Transcript
             exit 0
         }
         default {
-            Write-Output "$packageId not found or no update info available. Assuming compliant."
+            Write-Warning "Unknown status for $packageId. winget exit code: $exitCode"
+            Stop-Transcript
             exit 0
         }
     }
 } catch {
-    Write-Error "An error occurred while checking for updates to ${packageId}: $_"
+    Write-Error "Error occurred: $_"
+    Stop-Transcript
     exit 0
 }
